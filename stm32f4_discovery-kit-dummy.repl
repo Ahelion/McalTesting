@@ -1,0 +1,39 @@
+using "platforms/boards/stm32f4_discovery.repl"
+using "platforms/boards/stm32f4_discovery-additional_gpios.repl"
+using "platforms/boards/stm32f4_discovery-bb.repl"
+
+dummy: Python.PythonPeripheral @ sysbus 0x11840000
+    size: 0x20
+    initable: true
+    script: '''
+if request.isInit:
+	regs= [0xffffffff,
+		0xffffffff,
+		0xffffffff,
+		0xffffffff,
+		0xffffffff,
+		0xffffffff,
+		0xffffffff,
+		0xffffffff]
+if request.isRead:
+	if (request.offset//4 == 2):
+		request.value = regs[2]
+		regs[2] = 0x00000000
+	else:
+		request.value = regs[request.offset//4]
+elif request.isWrite:
+		if (request.offset//4 == 0) and (request.value == 0x00000000):
+			regs[0]= 0x00000000
+			regs[1]= 0x00000000
+			regs[2]= 0x00000000
+			regs[3]= 0x00000000
+		elif (request.offset//4 == 1) and ((request.value & 0x000000ff) == 0x000000aa):
+			regs[1] = request.value
+			regs[2] = 0xaaaaaaaa
+		elif (request.offset//4 == 3) and (((request.value >> 24) & 0x000000ff) == 0x000000fe) and (regs[0] != 0):
+			regs[1] = 0xffffffff
+			regs[2] = regs[0]
+			regs[3] = request.value
+		else:
+			regs[request.offset//4] = request.value
+'''

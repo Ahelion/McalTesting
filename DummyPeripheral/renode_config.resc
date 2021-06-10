@@ -1,0 +1,40 @@
+:name: LaTest
+:description: This script runs UART demo on STM32F4 Discovery.
+
+using sysbus
+$name?="TestDummyPeripheral"
+mach create $name
+machine LoadPlatformDescription @platforms/boards/stm32f4_discovery-kit-dummy.repl
+peripherals
+
+cpu PerformanceInMips 125
+
+$bin?=@stm32_bin_image.bin
+
+
+# Create a Telnet connection to the UART
+emulation CreateServerSocketTerminal 33335 "externalUART" false
+connector Connect sysbus.uart3 externalUART
+
+# Enable GDB
+machine StartGdbServer 1234
+
+### Set random board UNIQUE ID ###
+
+macro reset
+"""
+    sysbus LoadBinary $bin 0x8000000
+    sysbus.cpu VectorTableOffset 0x8000000
+"""
+
+macro dummy_mem
+"""
+	sysbus.dummy Reset
+"""
+
+
+runMacro $reset
+runMacro $dummy_mem
+start
+
+
