@@ -401,6 +401,10 @@ void TestCase4()
  * \param
  * \return  -
  **************************************************************************************************/
+ void TestCase5()
+ {
+ }
+ 
 int main() {
 	usart3_init();
 
@@ -408,7 +412,7 @@ int main() {
 	TestCase2();
 	TestCase3();
 	TestCase4();
-
+    TestCase5();
 	while (1) {
 
 	}
