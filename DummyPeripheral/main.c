@@ -111,21 +111,51 @@ void usart_putc(char data) {
 
 
 /**************************************************************************************************
+ * \brief
+ *
+ * \param
+ * \return  -
+ **************************************************************************************************/
+void usart_Tx(char *string) {
+	for (; *string != '\0'; string++) {
+		usart_putc(*string);
+	}
+}
+
+
+/**************************************************************************************************
  * \brief Send buffer in hex format to USART3
  *
  * \param   pBuf - pointer to the buffer
  * 			length - size of buffer in bytes
  * \return  -
  **************************************************************************************************/
-void usart_SendBufHex(unsigned char *pBuf, uint16_t bufsize) {
-	char ch;
+void usart_SendBufHex(unsigned int *pBuf, uint16_t bufsize) {
+	char sft;
+	unsigned int ch;
+
 
 	while (bufsize--) {
 		ch = *pBuf++;
+
+		while (!(USART3->SR & USART_SR_TXE)); // Wait while transmit data register not empty
+		USART3->DR = HEX_CHARS[(ch >> 28)   % 0x10];
+		while (!(USART3->SR & USART_SR_TXE)); // Wait while transmit data register not empty
+		USART3->DR = HEX_CHARS[(ch >> 24)   % 0x10];
+		while (!(USART3->SR & USART_SR_TXE)); // Wait while transmit data register not empty
+		USART3->DR = HEX_CHARS[(ch >> 20)   % 0x10];
+		while (!(USART3->SR & USART_SR_TXE)); // Wait while transmit data register not empty
+		USART3->DR = HEX_CHARS[(ch >> 16)   % 0x10];
+		while (!(USART3->SR & USART_SR_TXE)); // Wait while transmit data register not empty
+		USART3->DR = HEX_CHARS[(ch >> 12)   % 0x10];
+		while (!(USART3->SR & USART_SR_TXE)); // Wait while transmit data register not empty
+		USART3->DR = HEX_CHARS[(ch >> 8)   % 0x10];
 		while (!(USART3->SR & USART_SR_TXE)); // Wait while transmit data register not empty
 		USART3->DR = HEX_CHARS[(ch >> 4)   % 0x10];
 		while (!(USART3->SR & USART_SR_TXE)); // Wait while transmit data register not empty
 		USART3->DR = HEX_CHARS[(ch & 0x0f) % 0x10];
+
+		usart_Tx("   ");
 	}
 }
 
@@ -157,18 +187,6 @@ void usart_SendHex32(uint32_t num) {
 	USART_SendData(USART3,HEX_CHARS[(num >>  8) % 0x10]);
 	USART_SendData(USART3,HEX_CHARS[(num >>  4) % 0x10]);
 	USART_SendData(USART3,HEX_CHARS[(num & 0x0000000f) % 0x10]);
-}
-
-/**************************************************************************************************
- * \brief
- *
- * \param
- * \return  -
- **************************************************************************************************/
-void usart_Tx(char *string) {
-	for (; *string != '\0'; string++) {
-		usart_putc(*string);
-	}
 }
 
 
@@ -393,18 +411,36 @@ void TestCase3()
  **************************************************************************************************/
 void TestCase4()
 {
+	usart_Tx("\r\n**************************************\r\n");
+	usart_Tx("           TEST CASE 4:\r\n\r\n");
+	usart_Tx(" When written 0 to 'ctrl': 'set', 'dat' and 'trg' get set to 0x00. \r\n");
+	usart_Tx(" When 'dat' is read: 'dat' is completly cleared(with zeros). \r\n");
+	usart_Tx(" When 'ctrl' is not 0 and 0xFE is written to higher byte of 'trg': \r\n	- 'set' becomes 0xFF and \r\n	- 'ctrl' is copied to 'dat'. \r\n");
+	usart_Tx("==========================================\r\n");
 
+	usart_Tx(" Write 0x00000000 on 'ctrl' register. \r\n");
+	mem_Write32((unsigned int*) 0x11840000, 0x00000000);
+
+	/*Read all registers */
+	mem_ReadAndPrintAll();
+
+	usart_Tx("\r\n\r\n Write 0xFE on higher byte of 'trg' register. \r\n");
+	mem_Write8((unsigned int*)0x1184000C, 0, 0xFE);
+
+	/*Read all registers */
+	mem_ReadAndPrintAll();
+
+	/*Read all registers */
+	mem_ReadAndPrintAll();
+
+	usart_Tx("\r\n**************************************\r\n");
 }
 /**************************************************************************************************
  * \brief
  *
- * \param
- * \return  -
+ * \param  -
+ * \return
  **************************************************************************************************/
- void TestCase5()
- {
- }
- 
 int main() {
 	usart3_init();
 
@@ -412,7 +448,7 @@ int main() {
 	TestCase2();
 	TestCase3();
 	TestCase4();
-    TestCase5();
+
 	while (1) {
 
 	}
